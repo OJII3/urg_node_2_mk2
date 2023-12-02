@@ -26,6 +26,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -38,7 +39,7 @@
 #include "diagnostic_updater/publisher.hpp"
 #include "laser_proc/laser_publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
+/* #include "rclcpp_lifecycle/lifecycle_node.hpp" */
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/multi_echo_laser_scan.hpp"
 #include "urg_sensor.h"
@@ -58,10 +59,10 @@ using namespace std::chrono_literals;
 
 namespace urg_node2 {
 
-class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
+class UrgNode2 : public rclcpp::Node {
    public:
-    using CallbackReturn = rclcpp_lifecycle::node_interfaces::
-        LifecycleNodeInterface::CallbackReturn;
+    /* using CallbackReturn = rclcpp::node_interfaces:: */
+    /* LifecycleNodeInterface::CallbackReturn; */
 
     /**
      * @brief コンストラクタ
@@ -132,6 +133,8 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      */
     /* CallbackReturn on_error(const rclcpp_lifecycle::State &) override; */
+
+    auto StartAsync() -> std::future<void>;
 
    private:
     /**
@@ -281,9 +284,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
     void stop_diagnostics(void);
 
     /** スキャンデータのpublisher */
-    std::shared_ptr<
-        rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::LaserScan>>
-        scan_pub_;
+    std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::LaserScan>> scan_pub_;
     /** マルチエコースキャンデータのpublisher */
     std::unique_ptr<laser_proc::LaserPublisher> echo_pub_;
 

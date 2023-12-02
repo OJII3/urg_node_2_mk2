@@ -17,7 +17,7 @@
 namespace urg_node2 {
 
 UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
-    : rclcpp_lifecycle::LifecycleNode("urg_node2", node_options),
+    : rclcpp::Node("urg_node2", node_options),
       error_count_(0),
       is_connected_(false),
       is_measurement_started_(false),
@@ -58,27 +58,15 @@ UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
     // configure
     Initialize();
     // Publisher設定
-    if (use_multiecho_) {
-        echo_pub_ = std::make_unique<laser_proc::LaserPublisher>(
-            get_node_topics_interface(), 20);
-    } else {
-        scan_pub_ = create_publisher<sensor_msgs::msg::LaserScan>(
-            "scan", rclcpp::QoS(20));
-    }
-
-    // スレッド起動
-    StartThread();
-
-    // activate
-    if (scan_pub_) {
-        scan_pub_->on_activate();
-    }
-
-    // Diagnostics開始
-    start_diagnostics();
-
-    // 累計エラーカウントの初期化
-    total_error_count_ = 0;
+    /* if (use_multiecho_) { */
+    /*     echo_pub_ = std::make_unique<laser_proc::LaserPublisher>( */
+    /*         get_node_topics_interface(), 20); */
+    /* } else { */
+    /*     scan_pub_ = create_publisher<sensor_msgs::msg::LaserScan>( */
+    /*         "scan", rclcpp::QoS(20)); */
+    /* } */
+    scan_pub_ =
+        create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::QoS(20));
 }
 
 // デストラクタ
@@ -406,17 +394,17 @@ auto UrgNode2::ScanThread() -> std::future<void> {
             }
 
             // Inactive状態判定
-            rclcpp_lifecycle::State state = get_current_state();
-            if (state.label() == "inactive") {
-                is_stable_ = urg_is_stable(&urg_);
-                if (!is_stable_) {
-                    // 再接続処理
-                    reconnect();
-                    reconnect_count_++;
-                }
-                rclcpp::sleep_for(100ms);
-                continue;
-            }
+            /* rclcpp_lifecycle::State state = get_current_state(); */
+            /* if (state.label() == "inactive") { */
+            /*     is_stable_ = urg_is_stable(&urg_); */
+            /*     if (!is_stable_) { */
+            /*         // 再接続処理 */
+            /*         reconnect(); */
+            /*         reconnect_count_++; */
+            /*     } */
+            /*     rclcpp::sleep_for(100ms); */
+            /*     continue; */
+            /* } */
 
             // スキャン設定
             set_scan_parameter();
@@ -440,10 +428,10 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                             "Could not start Hokuyo measurement\n%s",
                             urg_error(&urg_));
 
-                // 再接続処理
-                reconnect();
-                reconnect_count_++;
-
+                /* // 再接続処理 */
+                /* reconnect(); */
+                /* reconnect_count_++; */
+                return;
                 continue;
             }
 
@@ -455,12 +443,12 @@ auto UrgNode2::ScanThread() -> std::future<void> {
 
             while (!close_thread_ && rclcpp::ok()) {
                 // Inactive状態判定
-                rclcpp_lifecycle::State state = get_current_state();
-                if (state.label() == "inactive") {
-                    urg_stop_measurement(&urg_);
-                    is_measurement_started_ = false;
-                    break;
-                }
+                /* rclcpp_lifecycle::State state = get_current_state(); */
+                /* if (state.label() == "inactive") { */
+                /*     urg_stop_measurement(&urg_); */
+                /*     is_measurement_started_ = false; */
+                /*     break; */
+                /* } */
 
                 if (use_multiecho_) {
                     sensor_msgs::msg::MultiEchoLaserScan msg;
@@ -504,8 +492,7 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                     // 再接続処理
                     /* reconnect(); */
                     /* reconnect_count_++; */
-                    shutdown();
-                    break;
+                    return;
                 }
                 // エラーカウントのリセット
                 rclcpp::Time current_time = system_clock.now();
@@ -693,11 +680,27 @@ void UrgNode2::populate_diagnostics_status(
     status.add("Reconnection Count", reconnect_count_);
 }
 
+auto UrgNode2::StartAsync() -> std::future<void> { return StartThread(); }
+
 // スキャンスレッドの開始
 auto UrgNode2::StartThread() -> std::future<void> {
     // スレッド終了フラグのクリア
     close_thread_ = false;
-    return ScanThread();
+
+    // スレッド起動
+    auto async_operation = ScanThread();
+
+    // activate
+    if (scan_pub_) {
+        /* scan_pub_->on_activate(); */
+    }
+
+    // Diagnostics開始
+    start_diagnostics();
+
+    // 累計エラーカウントの初期化
+    total_error_count_ = 0;
+    return async_operation;
 }
 
 // スキャンスレッドの停止
