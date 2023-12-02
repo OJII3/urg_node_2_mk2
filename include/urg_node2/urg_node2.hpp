@@ -85,7 +85,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      * @retval CallbackReturn::FAILURE LiDAR未接続
      */
-    CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_configure(const rclcpp_lifecycle::State &) override; */
 
     /**
      * @brief Lifecycle制御におけるInactiveからActiveへの遷移時の処理
@@ -94,7 +94,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      * @retval CallbackReturn::ERROR LiDAR未接続
      */
-    CallbackReturn on_activate(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_activate(const rclcpp_lifecycle::State &) override; */
 
     /**
      * @brief Lifecycle制御におけるActiveからInactiveへの遷移時の処理
@@ -103,7 +103,8 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      * @retval CallbackReturn::ERROR LiDAR未接続
      */
-    CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override;
+     */
 
     /**
      * @brief Lifecycle制御におけるInactiveからUnconfiguredへの遷移時の処理
@@ -112,7 +113,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @param[in] state 遷移前の状態
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      */
-    CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override; */
 
     /**
      * @brief Lifecycle制御における各状態からFinalizedへの遷移時の処理
@@ -121,7 +122,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @param[in] state 遷移前の状態
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      */
-    CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override; */
 
     /**
      * @brief Lifecycle制御における各状態からErrorへの遷移時の処理
@@ -130,7 +131,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @param[in] state 遷移前の状態
      * @retval CallbackReturn::SUCCESS 遷移処理成功
      */
-    CallbackReturn on_error(const rclcpp_lifecycle::State &) override;
+    /* CallbackReturn on_error(const rclcpp_lifecycle::State &) override; */
 
    private:
     /**
@@ -138,7 +139,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @details
      * 各種パラメータの設定、内部変数の初期化およびスキャンデータのpublisherの設定を行う
      */
-    void initialize(void);
+    void Initialize();
 
     /**
      * @brief LiDAR接続
@@ -146,19 +147,19 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @retval true 接続成功
      * @retval false 接続失敗
      */
-    bool connect(void);
+    auto connect() -> bool;
 
     /**
      * @brief スキャン設定
      * @details 受信用のデータ領域確保やLiDARに対してスキャンの設定を行う
      */
-    void set_scan_parameter(void);
+    void set_scan_parameter();
 
     /**
      * @brief LiDAR切断
      * @details LiDARからの切断処理を行う
      */
-    void disconnect(void);
+    void disconnect();
 
     /**
      * @brief LiDAR再接続
@@ -170,7 +171,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @brief スキャンスレッド
      * @details LiDARからスキャンデータを受信しトピックとして配信を行う
      */
-    void scan_thread(void);
+    auto ScanThread() -> std::future<void>;
 
     /**
      * @brief スキャントピック作成
@@ -259,13 +260,13 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
      * @brief スキャンスレッドの開始
      * @details LiDARとの通信を行うスキャンスレッドの開始を行う
      */
-    void start_thread(void);
+    auto StartThread() -> std::future<void>;
 
     /**
      * @brief スキャンスレッドの停止
      * @details LiDARとの通信を行うスキャンスレッドの停止および停止待機を行う
      */
-    void stop_thread(void);
+    /* void stop_thread(void); */
 
     /**
      * @brief Diagnosticsの開始
@@ -296,7 +297,7 @@ class UrgNode2 : public rclcpp_lifecycle::LifecycleNode {
     /** スレッドの終了フラグ */
     bool close_thread_;
     /** スキャンスレッドのスレッド変数 */
-    std::thread scan_thread_;
+    std::future<void> scan_thread_future_;
 
     /** LiDAR管理構造体 */
     urg_t urg_;

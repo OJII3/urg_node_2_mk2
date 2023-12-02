@@ -54,26 +54,9 @@ UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
     angle_max_ = declare_parameter<double>("angle_max", M_PI);
     skip_ = declare_parameter<int>("skip", 0);
     cluster_ = declare_parameter<int>("cluster", 1);
-}
 
-// デストラクタ
-UrgNode2::~UrgNode2() {
-    // スレッドの停止
-    stop_thread();
-}
-
-// onConfigure
-UrgNode2::CallbackReturn UrgNode2::on_configure(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition Configuring from %s",
-                 state.label().c_str());
-
-    initialize();
-
-    if (!connect()) {
-        return CallbackReturn::FAILURE;
-    }
-
+    // configure
+    Initialize();
     // Publisher設定
     if (use_multiecho_) {
         echo_pub_ = std::make_unique<laser_proc::LaserPublisher>(
@@ -84,125 +67,118 @@ UrgNode2::CallbackReturn UrgNode2::on_configure(
     }
 
     // スレッド起動
-    start_thread();
+    StartThread();
 
-    return CallbackReturn::SUCCESS;
+    // activate
+    if (scan_pub_) {
+        scan_pub_->on_activate();
+    }
+
+    // Diagnostics開始
+    start_diagnostics();
+
+    // 累計エラーカウントの初期化
+    total_error_count_ = 0;
 }
 
-// onActivate
-UrgNode2::CallbackReturn UrgNode2::on_activate(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition Activating from %s",
-                 state.label().c_str());
-
-    if (!is_connected_) {
-        return CallbackReturn::ERROR;
-    } else {
-        // publisherの有効化
-        if (scan_pub_) {
-            scan_pub_->on_activate();
-        }
-
-        // Diagnostics開始
-        start_diagnostics();
-
-        // 累計エラーカウントの初期化
-        total_error_count_ = 0;
-
-        return CallbackReturn::SUCCESS;
-    }
+// デストラクタ
+UrgNode2::~UrgNode2() {
+    // スレッドの停止
+    /* stop_thread(); */
 }
 
 // onDeactivate
-UrgNode2::CallbackReturn UrgNode2::on_deactivate(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition Deactivating from %s",
-                 state.label().c_str());
+/* UrgNode2::CallbackReturn UrgNode2::on_deactivate( */
+/*     const rclcpp_lifecycle::State& state) { */
+/*     RCLCPP_DEBUG(get_logger(), "transition Deactivating from %s", */
+/*                  state.label().c_str()); */
 
-    // Diagnostics停止
-    stop_diagnostics();
+/*     // Diagnostics停止 */
+/*     stop_diagnostics(); */
 
-    if (!is_connected_) {
-        return CallbackReturn::ERROR;
-    } else {
-        return CallbackReturn::SUCCESS;
-    }
-}
+/*     if (!is_connected_) { */
+/*         return CallbackReturn::ERROR; */
+/*     } else { */
+/*         return CallbackReturn::SUCCESS; */
+/*     } */
+/* } */
 
 // onCleanup
-UrgNode2::CallbackReturn UrgNode2::on_cleanup(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition CleaningUp from %s",
-                 state.label().c_str());
+/* UrgNode2::CallbackReturn UrgNode2::on_cleanup( */
+/*     const rclcpp_lifecycle::State& state) { */
+/*     RCLCPP_DEBUG(get_logger(), "transition CleaningUp from %s", */
+/*                  state.label().c_str()); */
 
-    // スレッドの停止
-    stop_thread();
+/*     // スレッドの停止 */
+/*     /1* stop_thread(); *1/ */
 
-    // publisherの解放
-    if (use_multiecho_) {
-        echo_pub_.reset();
-    } else {
-        scan_pub_.reset();
-    }
+/*     // publisherの解放 */
+/*     if (use_multiecho_) { */
+/*         echo_pub_.reset(); */
+/*     } else { */
+/*         scan_pub_.reset(); */
+/*     } */
 
-    // 切断
-    disconnect();
+/*     // 切断 */
+/*     disconnect(); */
 
-    return CallbackReturn::SUCCESS;
-}
+/*     return CallbackReturn::SUCCESS; */
+/* } */
 
 // onShutdown
-UrgNode2::CallbackReturn UrgNode2::on_shutdown(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition Shutdown from %s",
-                 state.label().c_str());
+/* UrgNode2::CallbackReturn UrgNode2::on_shutdown( */
+/*     const rclcpp_lifecycle::State& state) { */
+/*     RCLCPP_DEBUG(get_logger(), "transition Shutdown from %s", */
+/*                  state.label().c_str()); */
 
-    // スレッドの停止
-    stop_thread();
+/*     // スレッドの停止 */
+/*     /1* stop_thread(); *1/ */
 
-    // Diagnostics停止
-    stop_diagnostics();
+/*     // Diagnostics停止 */
+/*     stop_diagnostics(); */
 
-    // publisherの解放
-    if (use_multiecho_) {
-        echo_pub_.reset();
-    } else {
-        scan_pub_.reset();
-    }
+/*     // publisherの解放 */
+/*     if (use_multiecho_) { */
+/*         echo_pub_.reset(); */
+/*     } else { */
+/*         scan_pub_.reset(); */
+/*     } */
 
-    // 切断
-    disconnect();
+/*     // 切断 */
+/*     disconnect(); */
 
-    return CallbackReturn::SUCCESS;
-}
+/*     return CallbackReturn::SUCCESS; */
+/* } */
 
 // onError
-UrgNode2::CallbackReturn UrgNode2::on_error(
-    const rclcpp_lifecycle::State& state) {
-    RCLCPP_DEBUG(get_logger(), "transition Error from %s",
-                 state.label().c_str());
+/* UrgNode2::CallbackReturn UrgNode2::on_error( */
+/*     const rclcpp_lifecycle::State& state) { */
+/*     RCLCPP_DEBUG(get_logger(), "transition Error from %s", */
+/*                  state.label().c_str()); */
 
-    // スレッドの停止
-    stop_thread();
+/*     // スレッドの停止 */
+/*     /1* stop_thread(); *1/ */
 
-    // Diagnostics停止
-    stop_diagnostics();
+/*     // Diagnostics停止 */
+/*     stop_diagnostics(); */
 
-    // publisherの解放
-    if (use_multiecho_) {
-        echo_pub_.reset();
-    } else {
-        scan_pub_.reset();
-    }
+/*     // publisherの解放 */
+/*     if (use_multiecho_) { */
+/*         echo_pub_.reset(); */
+/*     } else { */
+/*         scan_pub_.reset(); */
+/*     } */
 
-    // 切断
-    disconnect();
+/*     // 切断 */
+/*     disconnect(); */
 
-    return CallbackReturn::SUCCESS;
-}
+/*     /1* rclcpp::shutdown(); *1/ */
+
+/*     return CallbackReturn::SUCCESS; */
+/* } */
 
 // 初期化
-void UrgNode2::initialize() {
+void UrgNode2::Initialize() {
     // パラメータ取得
     ip_address_ = get_parameter("ip_address").as_string();
     ip_port_ = get_parameter("ip_port").as_int();
@@ -252,7 +228,7 @@ void UrgNode2::initialize() {
 }
 
 // Lidarとの接続処理
-bool UrgNode2::connect() {
+auto UrgNode2::connect() -> bool {
     if (!ip_address_.empty()) {
         // イーサネット接続
         int result =
@@ -393,8 +369,8 @@ void UrgNode2::set_scan_parameter() {
          (2.0 * M_PI)) *
         scan_period_ / static_cast<double>(max_step - min_step);
 
-    long min_dis;
-    long max_dis;
+    long min_dis = 0;
+    long max_dis = 0;
     urg_distance_min_max(&urg_, &min_dis, &max_dis);
     topic_range_min_ = static_cast<double>(min_dis) / 1000.0;
     topic_range_max_ = static_cast<double>(max_dis) / 1000.0;
@@ -417,113 +393,120 @@ void UrgNode2::reconnect() {
 }
 
 // scanスレッド
-void UrgNode2::scan_thread() {
-    reconnect_count_ = 0;
+auto UrgNode2::ScanThread() -> std::future<void> {
+    return std::async(std::launch::async, [this]() {
+        reconnect_count_ = 0;
 
-    while (!close_thread_) {
-        if (!is_connected_) {
-            if (!connect()) {
-                rclcpp::sleep_for(500ms);
-                continue;
+        while (!close_thread_ && rclcpp::ok()) {
+            if (!is_connected_) {
+                if (!connect()) {
+                    rclcpp::sleep_for(500ms);
+                    continue;
+                }
             }
-        }
 
-        // Inactive状態判定
-        rclcpp_lifecycle::State state = get_current_state();
-        if (state.label() == "inactive") {
-            is_stable_ = urg_is_stable(&urg_);
-            if (!is_stable_) {
-                // 再接続処理
-                reconnect();
-                reconnect_count_++;
-            }
-            rclcpp::sleep_for(100ms);
-            continue;
-        }
-
-        // スキャン設定
-        set_scan_parameter();
-
-        // 調整モード
-        if (calibrate_time_) {
-            calibrate_system_latency(URG_NODE2_CALIBRATION_MEASUREMENT_TIME);
-        }
-
-        // LiDAR状態更新
-        device_status_ = urg_sensor_status(&urg_);
-        sensor_status_ = urg_sensor_state(&urg_);
-        is_stable_ = urg_is_stable(&urg_);
-
-        // 計測開始
-        int ret = urg_start_measurement(&urg_, measurement_type_, 0, skip_, 0);
-        if (ret < 0) {
-            RCLCPP_WARN(get_logger(), "Could not start Hokuyo measurement\n%s",
-                        urg_error(&urg_));
-
-            // 再接続処理
-            reconnect();
-            reconnect_count_++;
-
-            continue;
-        }
-
-        is_measurement_started_ = true;
-        error_count_ = 0;
-
-        rclcpp::Clock system_clock(RCL_SYSTEM_TIME);
-        rclcpp::Time prev_time = system_clock.now();
-
-        while (!close_thread_) {
             // Inactive状態判定
             rclcpp_lifecycle::State state = get_current_state();
             if (state.label() == "inactive") {
-                urg_stop_measurement(&urg_);
-                is_measurement_started_ = false;
-                break;
+                is_stable_ = urg_is_stable(&urg_);
+                if (!is_stable_) {
+                    // 再接続処理
+                    reconnect();
+                    reconnect_count_++;
+                }
+                rclcpp::sleep_for(100ms);
+                continue;
             }
 
-            if (use_multiecho_) {
-                sensor_msgs::msg::MultiEchoLaserScan msg;
-                if (create_scan_message(msg)) {
-                    echo_pub_->publish(msg);
-                    if (echo_freq_) {
-                        echo_freq_->tick();
-                    }
-                } else {
-                    RCLCPP_WARN(get_logger(), "Could not get multi echo scan.");
-                    error_count_++;
-                    total_error_count_++;
-                    device_status_ = urg_sensor_status(&urg_);
-                    sensor_status_ = urg_sensor_state(&urg_);
-                    is_stable_ = urg_is_stable(&urg_);
-                }
-            } else {
-                sensor_msgs::msg::LaserScan msg;
-                if (create_scan_message(msg)) {
-                    scan_pub_->publish(msg);
-                    if (scan_freq_) {
-                        scan_freq_->tick();
-                    }
-                } else {
-                    RCLCPP_WARN(get_logger(),
-                                "Could not get single echo scan.");
-                    error_count_++;
-                    total_error_count_++;
-                    device_status_ = urg_sensor_status(&urg_);
-                    sensor_status_ = urg_sensor_state(&urg_);
-                    is_stable_ = urg_is_stable(&urg_);
-                }
+            // スキャン設定
+            set_scan_parameter();
+
+            // 調整モード
+            if (calibrate_time_) {
+                calibrate_system_latency(
+                    URG_NODE2_CALIBRATION_MEASUREMENT_TIME);
             }
 
-            // エラーカウント判定
-            if (error_count_ > error_limit_) {
-                RCLCPP_ERROR(get_logger(),
-                             "Error count exceeded limit, reconnecting.");
+            // LiDAR状態更新
+            device_status_ = urg_sensor_status(&urg_);
+            sensor_status_ = urg_sensor_state(&urg_);
+            is_stable_ = urg_is_stable(&urg_);
+
+            // 計測開始
+            int ret =
+                urg_start_measurement(&urg_, measurement_type_, 0, skip_, 0);
+            if (ret < 0) {
+                RCLCPP_WARN(get_logger(),
+                            "Could not start Hokuyo measurement\n%s",
+                            urg_error(&urg_));
+
                 // 再接続処理
                 reconnect();
                 reconnect_count_++;
-                break;
-            } else {
+
+                continue;
+            }
+
+            is_measurement_started_ = true;
+            error_count_ = 0;
+
+            rclcpp::Clock system_clock(RCL_SYSTEM_TIME);
+            rclcpp::Time prev_time = system_clock.now();
+
+            while (!close_thread_ && rclcpp::ok()) {
+                // Inactive状態判定
+                rclcpp_lifecycle::State state = get_current_state();
+                if (state.label() == "inactive") {
+                    urg_stop_measurement(&urg_);
+                    is_measurement_started_ = false;
+                    break;
+                }
+
+                if (use_multiecho_) {
+                    sensor_msgs::msg::MultiEchoLaserScan msg;
+                    if (create_scan_message(msg)) {
+                        echo_pub_->publish(msg);
+                        if (echo_freq_) {
+                            echo_freq_->tick();
+                        }
+                    } else {
+                        RCLCPP_WARN(get_logger(),
+                                    "Could not get multi echo scan.");
+                        error_count_++;
+                        total_error_count_++;
+                        device_status_ = urg_sensor_status(&urg_);
+                        sensor_status_ = urg_sensor_state(&urg_);
+                        is_stable_ = urg_is_stable(&urg_);
+                    }
+                } else {
+                    sensor_msgs::msg::LaserScan msg;
+                    if (create_scan_message(msg)) {
+                        scan_pub_->publish(msg);
+                        if (scan_freq_) {
+                            scan_freq_->tick();
+                        }
+                    } else {
+                        RCLCPP_WARN(get_logger(),
+                                    "Could not get single echo scan.");
+                        error_count_++;
+                        total_error_count_++;
+                        device_status_ = urg_sensor_status(&urg_);
+                        sensor_status_ = urg_sensor_state(&urg_);
+                        is_stable_ = urg_is_stable(&urg_);
+                    }
+                }
+
+                // エラーカウント判定
+                if (error_count_ > error_limit_) {
+                    RCLCPP_ERROR(
+                        get_logger(),
+                        "Error count exceeded limit, terminating node...");
+                    // 再接続処理
+                    /* reconnect(); */
+                    /* reconnect_count_++; */
+                    shutdown();
+                    break;
+                }
                 // エラーカウントのリセット
                 rclcpp::Time current_time = system_clock.now();
                 rclcpp::Duration period = current_time - prev_time;
@@ -533,14 +516,14 @@ void UrgNode2::scan_thread() {
                 }
             }
         }
-    }
 
-    // 切断処理
-    disconnect();
+        // 切断処理
+        disconnect();
+    });
 }
 
 // スキャンデータ取得
-bool UrgNode2::create_scan_message(sensor_msgs::msg::LaserScan& msg) {
+auto UrgNode2::create_scan_message(sensor_msgs::msg::LaserScan& msg) -> bool {
     msg.header.frame_id = header_frame_id_;
     msg.angle_min = topic_angle_min_;
     msg.angle_max = topic_angle_max_;
@@ -595,7 +578,8 @@ bool UrgNode2::create_scan_message(sensor_msgs::msg::LaserScan& msg) {
 }
 
 // マルチエコースキャンデータ取得
-bool UrgNode2::create_scan_message(sensor_msgs::msg::MultiEchoLaserScan& msg) {
+auto UrgNode2::create_scan_message(sensor_msgs::msg::MultiEchoLaserScan& msg)
+    -> bool {
     msg.header.frame_id = header_frame_id_;
     msg.angle_min = topic_angle_min_;
     msg.angle_max = topic_angle_max_;
@@ -710,20 +694,20 @@ void UrgNode2::populate_diagnostics_status(
 }
 
 // スキャンスレッドの開始
-void UrgNode2::start_thread(void) {
+auto UrgNode2::StartThread() -> std::future<void> {
     // スレッド終了フラグのクリア
     close_thread_ = false;
-    scan_thread_ = std::thread(std::bind(&UrgNode2::scan_thread, this));
+    return ScanThread();
 }
 
 // スキャンスレッドの停止
-void UrgNode2::stop_thread(void) {
-    // スレッド終了フラグのセット
-    close_thread_ = true;
-    if (scan_thread_.joinable()) {
-        scan_thread_.join();
-    }
-}
+/* void UrgNode2::stop_thread(void) { */
+/*     // スレッド終了フラグのセット */
+/*     close_thread_ = true; */
+/*     if (scan_thread_future_.joinable()) { */
+/*         scan_thread_future_.join(); */
+/*     } */
+/* } */
 
 // Diagnosticsの開始
 void UrgNode2::start_diagnostics(void) {
@@ -775,7 +759,7 @@ void UrgNode2::stop_diagnostics(void) {
 }
 
 // 接続先LiDARが強度出力に対応しているかどうか
-bool UrgNode2::is_intensity_supported(void) {
+auto UrgNode2::is_intensity_supported() -> bool {
     // 計測は停止している必要がある
     if (is_measurement_started_) {
         return false;
@@ -787,8 +771,8 @@ bool UrgNode2::is_intensity_supported(void) {
         return false;
     }
     is_measurement_started_ = true;
-    int ret =
-        urg_get_distance_intensity(&urg_, &distance_[0], &intensity_[0], NULL);
+    int ret = urg_get_distance_intensity(&urg_, &distance_[0], &intensity_[0],
+                                         nullptr);
     if (ret <= 0) {
         // 強度出力非対応
         return false;
@@ -800,7 +784,7 @@ bool UrgNode2::is_intensity_supported(void) {
 }
 
 // 接続先LiDARがマルチエコー出力に対応しているかどうか
-bool UrgNode2::is_multiecho_supported(void) {
+auto UrgNode2::is_multiecho_supported() -> bool {
     // 計測は停止している必要がある
     if (is_measurement_started_) {
         return false;
@@ -812,7 +796,7 @@ bool UrgNode2::is_multiecho_supported(void) {
         return false;
     }
     is_measurement_started_ = true;
-    int ret = urg_get_multiecho(&urg_, &distance_[0], NULL);
+    int ret = urg_get_multiecho(&urg_, &distance_[0], nullptr);
     if (ret <= 0) {
         // マルチエコー出力非対応
         return false;
