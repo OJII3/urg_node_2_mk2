@@ -1,6 +1,11 @@
 #pragma once
+#include <dirent.h>
 #include <libusb-1.0/libusb.h>
+#include <unistd.h>
 
+#include <array>
+#include <cstring>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -27,6 +32,8 @@ class USB {
     ~USB();
 
     auto GetDeviceList() -> std::vector<Device>;
+    static auto GetSerialPortFromSearch(const std::string& search_string,
+                                        std::string& serial_port) -> bool;
 
    private:
     libusb_context* ctx_ = nullptr;

@@ -313,7 +313,7 @@ class UrgNode2 : public rclcpp::Node {
     /** パラメータ"serial_baud" : 接続ボーレート */
     int serial_baud_;
     /** パラメータ "usb_manufacturer" : 接続先USBデバイスのメーカ名 */
-    std::string usb_manufacturer_;
+    std::string usb_serial_search_string_;
     /** パラメータ"frame_id" : スキャンデータのframe_id */
     std::string frame_id_;
     /** パラメータ"calibrate_time" : 調整モード */

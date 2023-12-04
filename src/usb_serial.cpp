@@ -35,14 +35,46 @@ auto USB::GetDeviceList() -> std::vector<Device> {
         device.product.resize(128);
         libusb_get_string_descriptor_ascii(
             handle_, desc_.iManufacturer,
-            (unsigned char*)device.manufacturer.data(),
+            (unsigned char *)device.manufacturer.data(),
             device.manufacturer.size());
         libusb_get_string_descriptor_ascii(
-            handle_, desc_.iProduct, (unsigned char*)device.product.data(),
+            handle_, desc_.iProduct, (unsigned char *)device.product.data(),
             device.product.size());
 
         devices.push_back(device);
         libusb_close(handle_);
     }
     return devices;
+}
+
+auto USB::GetSerialPortFromSearch(const std::string &match_string,
+                                  std::string &serial_port) -> bool {
+    DIR *dir = opendir("/dev/serial/by-id");
+    if (dir == NULL) {
+        std::cerr << "Error opening directory: " << strerror(errno)
+                  << std::endl;
+        return false;
+    }
+
+    struct dirent *entry = nullptr;
+    while ((entry = readdir(dir)) != NULL) {
+        if (static_cast<std::string>(entry->d_name).find(match_string) !=
+            std::string::npos) {
+            std::string linkname =
+                "/dev/serial/by-id/" + std::string(entry->d_name);
+            char target[PATH_MAX];
+            int nbytes = readlink(linkname.c_str(), target, PATH_MAX);
+            if (nbytes > 0) {
+                target[nbytes] = '\0';
+                std::string productname = target;
+                productname.replace(0, 5, "/dev");
+                serial_port = productname;
+                closedir(dir);
+                return true;
+            }
+        }
+    }
+
+    closedir(dir);
+    return false;
 }

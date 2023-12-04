@@ -2,7 +2,7 @@ urg_node2:
   ros__parameters:
     serial_port: "/dev/ttyACM0"
     serial_baud: 115200
-    usb_manufacturer: "Hokuyo Data Flex for USB"
+    usb_serial_search_string: "Hokuyo_Data_Flex_for_USB"
     frame_id: "laser"
     calibrate_time: false
     synchronize_time: false
