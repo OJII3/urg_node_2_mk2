@@ -39,6 +39,7 @@
 #include "diagnostic_updater/publisher.hpp"
 #include "laser_proc/laser_publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "usb_serial.hpp"
 /* #include "rclcpp_lifecycle/lifecycle_node.hpp" */
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/multi_echo_laser_scan.hpp"
@@ -311,6 +312,8 @@ class UrgNode2 : public rclcpp::Node {
     std::string serial_port_;
     /** パラメータ"serial_baud" : 接続ボーレート */
     int serial_baud_;
+    /** パラメータ "usb_manufacturer" : 接続先USBデバイスのメーカ名 */
+    std::string usb_manufacturer_;
     /** パラメータ"frame_id" : スキャンデータのframe_id */
     std::string frame_id_;
     /** パラメータ"calibrate_time" : 調整モード */

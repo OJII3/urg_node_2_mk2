@@ -1,3 +1,6 @@
+// TODO: ゴミみたいなコードを修正する(やりたくねぇぇぇぇぇ!)
+// TODO: このクラスの機能を分割する,とくにUSBまわり
+
 // Copyright 2022 eSOL Co.,Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +16,8 @@
 // limitations under the License.
 
 #include "urg_node2/urg_node2.hpp"
+
+#include <string>
 
 namespace urg_node2 {
 
@@ -38,6 +43,8 @@ UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
     serial_port_ =
         declare_parameter<std::string>("serial_port", "/dev/ttyACM0");
     serial_baud_ = declare_parameter<int>("serial_baud", 115200);
+    usb_manufacturer_ = declare_parameter<std::string>(
+        "usb_manufacturer", "Hokuyo Data Flex for USB");
     frame_id_ = declare_parameter<std::string>("frame_id", "laser");
     calibrate_time_ = declare_parameter<bool>("calibrate_time", false);
     synchronize_time_ = declare_parameter<bool>("synchronize_time", false);
@@ -213,6 +220,8 @@ void UrgNode2::Initialize() {
     last_hardware_time_stamp_ = 0;
     hardware_clock_adj_ = 0;
     adj_count_ = 0;
+
+    RCLCPP_INFO_STREAM(get_logger(), "Initialization completed");
 }
 
 // Lidarとの接続処理
@@ -228,7 +237,30 @@ auto UrgNode2::connect() -> bool {
             return false;
         }
     } else {
+        RCLCPP_INFO_STREAM(get_logger(),
+                           "Searching for USB device: " << usb_manufacturer_);
         // シリアル接続
+        /* serial_port_ = get_parameter("serial_port").as_string(); */
+        USB usb_serial;
+        auto usb_devices = usb_serial.GetDeviceList();
+        RCLCPP_INFO_STREAM(get_logger(),
+                           "USB device count: " << usb_devices.size());
+        if (usb_devices.empty()) {
+            RCLCPP_ERROR(get_logger(), "Could not find any USB devices");
+            return false;
+        }
+
+        for (auto& device : usb_devices) {
+            if (device.manufacturer == usb_manufacturer_) {
+                serial_port_ =
+                    "/dev/ttyACM" + std::to_string(device.port_number);
+                RCLCPP_INFO_STREAM(
+                    get_logger(),
+                    "Found USB device, connecting to " << serial_port_);
+                break;
+            }
+        }
+
         int result =
             urg_open(&urg_, URG_SERIAL, serial_port_.c_str(), serial_baud_);
         if (result < 0) {

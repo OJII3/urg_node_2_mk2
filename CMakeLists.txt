@@ -42,13 +42,14 @@ ament_auto_add_library(
   ${URG_LIBRARY_SRC_DIR}/urg_serial_utils.c
   ${URG_LIBRARY_SRC_DIR}/urg_tcpclient.c)
 
-ament_auto_add_library(urg_node2 SHARED src/urg_node2.cpp)
+ament_auto_add_library(urg_node2 SHARED src/urg_node2.cpp src/usb_serial.cpp)
 # ament_target_dependencies( urg_node2 rclcpp rclcpp_components rclcpp_lifecycle
 # lifecycle_msgs sensor_msgs diagnostic_updater laser_proc)
 # rclcpp_components_register_node(urg_node2 PLUGIN "urg_node2::UrgNode2"
 # EXECUTABLE urg_node2_node)
 
 target_link_libraries(${PROJECT_NAME} urg_c)
+target_link_libraries(${PROJECT_NAME} usb-1.0)
 
 ament_auto_add_executable(urg_node2_node src/main.cpp)
 
