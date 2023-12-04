@@ -43,8 +43,8 @@ UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
     serial_port_ =
         declare_parameter<std::string>("serial_port", "/dev/ttyACM0");
     serial_baud_ = declare_parameter<int>("serial_baud", 115200);
-    usb_manufacturer_ = declare_parameter<std::string>(
-        "usb_manufacturer", "Hokuyo Data Flex for USB");
+    usb_serial_search_string_ = declare_parameter<std::string>(
+        "usb_serial_search_string", "Hokuyo_Data_Flex_for_USB");
     frame_id_ = declare_parameter<std::string>("frame_id", "laser");
     calibrate_time_ = declare_parameter<bool>("calibrate_time", false);
     synchronize_time_ = declare_parameter<bool>("synchronize_time", false);
@@ -237,36 +237,29 @@ auto UrgNode2::connect() -> bool {
             return false;
         }
     } else {
-        RCLCPP_INFO_STREAM(get_logger(),
-                           "Searching for USB device: " << usb_manufacturer_);
+        usb_serial_search_string_ =
+            get_parameter("usb_serial_search_string").as_string();
         // シリアル接続
-        /* serial_port_ = get_parameter("serial_port").as_string(); */
-        USB usb_serial;
-        auto usb_devices = usb_serial.GetDeviceList();
         RCLCPP_INFO_STREAM(get_logger(),
-                           "USB device count: " << usb_devices.size());
-        if (usb_devices.empty()) {
-            RCLCPP_ERROR(get_logger(), "Could not find any USB devices");
-            return false;
-        }
-
-        for (auto& device : usb_devices) {
-            if (device.manufacturer == usb_manufacturer_) {
-                serial_port_ =
-                    "/dev/ttyACM" + std::to_string(device.port_number);
-                RCLCPP_INFO_STREAM(
-                    get_logger(),
-                    "Found USB device, connecting to " << serial_port_);
-                break;
+                           "Searching for " << usb_serial_search_string_);
+        if (USB::GetSerialPortFromSearch(usb_serial_search_string_,
+                                         serial_port_)) {
+            RCLCPP_INFO_STREAM(get_logger(), "Found "
+                                                 << serial_port_ << " from "
+                                                 << usb_serial_search_string_);
+            int result =
+                urg_open(&urg_, URG_SERIAL, serial_port_.c_str(), serial_baud_);
+            if (result < 0) {
+                RCLCPP_ERROR(get_logger(),
+                             "Could not open serial Hokuyo 2D LiDAR\n%s:%d\n%s",
+                             serial_port_.c_str(), serial_baud_,
+                             urg_error(&urg_));
+                return false;
             }
-        }
-
-        int result =
-            urg_open(&urg_, URG_SERIAL, serial_port_.c_str(), serial_baud_);
-        if (result < 0) {
-            RCLCPP_ERROR(get_logger(),
-                         "Could not open serial Hokuyo 2D LiDAR\n%s:%d\n%s",
-                         serial_port_.c_str(), serial_baud_, urg_error(&urg_));
+        } else {
+            RCLCPP_ERROR_STREAM(get_logger(), "Could not find "
+                                                  << usb_serial_search_string_
+                                                  << " from " << serial_port_);
             return false;
         }
     }
