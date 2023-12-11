@@ -49,7 +49,6 @@ ament_auto_add_library(urg_node2 SHARED src/urg_node2.cpp src/usb_serial.cpp)
 # EXECUTABLE urg_node2_node)
 
 target_link_libraries(${PROJECT_NAME} urg_c)
-target_link_libraries(${PROJECT_NAME} usb-1.0)
 
 ament_auto_add_executable(urg_node2_node src/main.cpp)
 

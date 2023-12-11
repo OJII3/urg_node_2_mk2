@@ -17,8 +17,6 @@
 
 #include "urg_node2/urg_node2.hpp"
 
-#include <string>
-
 namespace urg_node2 {
 
 UrgNode2::UrgNode2(const rclcpp::NodeOptions& node_options)
@@ -81,96 +79,6 @@ UrgNode2::~UrgNode2() {
     // スレッドの停止
     /* stop_thread(); */
 }
-
-// onDeactivate
-/* UrgNode2::CallbackReturn UrgNode2::on_deactivate( */
-/*     const rclcpp_lifecycle::State& state) { */
-/*     RCLCPP_DEBUG(get_logger(), "transition Deactivating from %s", */
-/*                  state.label().c_str()); */
-
-/*     // Diagnostics停止 */
-/*     stop_diagnostics(); */
-
-/*     if (!is_connected_) { */
-/*         return CallbackReturn::ERROR; */
-/*     } else { */
-/*         return CallbackReturn::SUCCESS; */
-/*     } */
-/* } */
-
-// onCleanup
-/* UrgNode2::CallbackReturn UrgNode2::on_cleanup( */
-/*     const rclcpp_lifecycle::State& state) { */
-/*     RCLCPP_DEBUG(get_logger(), "transition CleaningUp from %s", */
-/*                  state.label().c_str()); */
-
-/*     // スレッドの停止 */
-/*     /1* stop_thread(); *1/ */
-
-/*     // publisherの解放 */
-/*     if (use_multiecho_) { */
-/*         echo_pub_.reset(); */
-/*     } else { */
-/*         scan_pub_.reset(); */
-/*     } */
-
-/*     // 切断 */
-/*     disconnect(); */
-
-/*     return CallbackReturn::SUCCESS; */
-/* } */
-
-// onShutdown
-/* UrgNode2::CallbackReturn UrgNode2::on_shutdown( */
-/*     const rclcpp_lifecycle::State& state) { */
-/*     RCLCPP_DEBUG(get_logger(), "transition Shutdown from %s", */
-/*                  state.label().c_str()); */
-
-/*     // スレッドの停止 */
-/*     /1* stop_thread(); *1/ */
-
-/*     // Diagnostics停止 */
-/*     stop_diagnostics(); */
-
-/*     // publisherの解放 */
-/*     if (use_multiecho_) { */
-/*         echo_pub_.reset(); */
-/*     } else { */
-/*         scan_pub_.reset(); */
-/*     } */
-
-/*     // 切断 */
-/*     disconnect(); */
-
-/*     return CallbackReturn::SUCCESS; */
-/* } */
-
-// onError
-/* UrgNode2::CallbackReturn UrgNode2::on_error( */
-/*     const rclcpp_lifecycle::State& state) { */
-/*     RCLCPP_DEBUG(get_logger(), "transition Error from %s", */
-/*                  state.label().c_str()); */
-
-/*     // スレッドの停止 */
-/*     /1* stop_thread(); *1/ */
-
-/*     // Diagnostics停止 */
-/*     stop_diagnostics(); */
-
-/*     // publisherの解放 */
-/*     if (use_multiecho_) { */
-/*         echo_pub_.reset(); */
-/*     } else { */
-/*         scan_pub_.reset(); */
-/*     } */
-
-/*     // 切断 */
-/*     disconnect(); */
-
-/*     /1* rclcpp::shutdown(); *1/ */
-
-/*     return CallbackReturn::SUCCESS; */
-/* } */
 
 // 初期化
 void UrgNode2::Initialize() {
@@ -418,19 +326,6 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                 }
             }
 
-            // Inactive状態判定
-            /* rclcpp_lifecycle::State state = get_current_state(); */
-            /* if (state.label() == "inactive") { */
-            /*     is_stable_ = urg_is_stable(&urg_); */
-            /*     if (!is_stable_) { */
-            /*         // 再接続処理 */
-            /*         reconnect(); */
-            /*         reconnect_count_++; */
-            /*     } */
-            /*     rclcpp::sleep_for(100ms); */
-            /*     continue; */
-            /* } */
-
             // スキャン設定
             set_scan_parameter();
 
@@ -453,9 +348,7 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                             "Could not start Hokuyo measurement\n%s",
                             urg_error(&urg_));
 
-                /* // 再接続処理 */
-                /* reconnect(); */
-                /* reconnect_count_++; */
+                disconnect();
                 return;
                 continue;
             }
@@ -467,14 +360,6 @@ auto UrgNode2::ScanThread() -> std::future<void> {
             rclcpp::Time prev_time = system_clock.now();
 
             while (!close_thread_ && rclcpp::ok()) {
-                // Inactive状態判定
-                /* rclcpp_lifecycle::State state = get_current_state(); */
-                /* if (state.label() == "inactive") { */
-                /*     urg_stop_measurement(&urg_); */
-                /*     is_measurement_started_ = false; */
-                /*     break; */
-                /* } */
-
                 if (use_multiecho_) {
                     sensor_msgs::msg::MultiEchoLaserScan msg;
                     if (create_scan_message(msg)) {
@@ -514,9 +399,8 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                     RCLCPP_ERROR(
                         get_logger(),
                         "Error count exceeded limit, terminating node...");
-                    // 再接続処理
-                    /* reconnect(); */
-                    /* reconnect_count_++; */
+                    error_count_ = 0;
+                    disconnect();
                     return;
                 }
                 // エラーカウントのリセット
@@ -763,7 +647,7 @@ void UrgNode2::start_diagnostics(void) {
 }
 
 // Diagnosticsの停止
-void UrgNode2::stop_diagnostics(void) {
+void UrgNode2::stop_diagnostics() {
     // Diagnostics解放
     diagnostic_updater_.reset();
     if (use_multiecho_) {

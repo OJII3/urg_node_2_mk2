@@ -3,6 +3,8 @@
 #include <urg_node2/urg_node2.hpp>
 
 auto main(int argc, char **argv) -> int {
+
+
     rclcpp::init(argc, argv);
     auto node = std::make_shared<urg_node2::UrgNode2>();
     auto async_operation = node->StartAsync();

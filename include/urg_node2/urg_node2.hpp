@@ -17,34 +17,23 @@
  * @brief ROS2対応LiDARドライバ
  */
 
-#ifndef URG_NODE2_URG_NODE2_HPP_
-#define URG_NODE2_URG_NODE2_HPP_
+#pragma once
 
-#include <algorithm>
-#include <chrono>
-#include <csignal>
-#include <functional>
-#include <limits>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <sstream>
-#include <stdexcept>
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <sensor_msgs/msg/multi_echo_laser_scan.hpp>
 #include <string>
-#include <thread>
-#include <utility>
 #include <vector>
 
-#include "diagnostic_msgs/msg/diagnostic_status.hpp"
+#include <string>
+#include "urg_utils.h"
+
 #include "diagnostic_updater/diagnostic_updater.hpp"
 #include "diagnostic_updater/publisher.hpp"
 #include "laser_proc/laser_publisher.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "usb_serial.hpp"
-/* #include "rclcpp_lifecycle/lifecycle_node.hpp" */
-#include "sensor_msgs/msg/laser_scan.hpp"
-#include "sensor_msgs/msg/multi_echo_laser_scan.hpp"
 #include "urg_sensor.h"
-#include "urg_utils.h"
+#include "usb_serial.hpp"
 
 using namespace std::chrono_literals;
 
@@ -169,7 +158,7 @@ class UrgNode2 : public rclcpp::Node {
      * @brief LiDAR再接続
      * @details LiDARからの切断処理および接続処理を行う
      */
-    void reconnect(void);
+    void reconnect();
 
     /**
      * @brief スキャンスレッド
@@ -425,4 +414,3 @@ class UrgNode2 : public rclcpp::Node {
 };
 
 }  // namespace urg_node2
-#endif  // URG_NODE2_URG_NODE2_HPP_
