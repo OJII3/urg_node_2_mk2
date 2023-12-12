@@ -349,6 +349,7 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                             urg_error(&urg_));
 
                 disconnect();
+                close_thread_ = true;
                 return;
                 continue;
             }
@@ -401,6 +402,7 @@ auto UrgNode2::ScanThread() -> std::future<void> {
                         "Error count exceeded limit, terminating node...");
                     error_count_ = 0;
                     disconnect();
+                    close_thread_ = true;
                     return;
                 }
                 // エラーカウントのリセット
